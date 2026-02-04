@@ -72,9 +72,9 @@ export default function SplashScreen({ navigation }) {
 
         setTimeout(() => animateDots(), 1000);
 
-        // Navigate to form after 4 seconds
+        // Navigate to home screen after 4 seconds
         const timer = setTimeout(() => {
-            navigation.replace('MemberForm');
+            navigation.replace('Home');
         }, 4000);
 
         return () => clearTimeout(timer);

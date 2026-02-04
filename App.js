@@ -2,7 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import SplashScreen from './src/screens/SplashScreen';
+import HomeScreen from './src/screens/HomeScreen';
 import MemberFormScreen from './src/screens/MemberFormScreen';
+import AdminLoginScreen from './src/screens/AdminLoginScreen';
+import AdminDashboardScreen from './src/screens/AdminDashboardScreen';
 import { initDatabase } from './src/services/database';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
@@ -39,7 +42,10 @@ export default function App() {
         }}
       >
         <Stack.Screen name="Splash" component={SplashScreen} />
+        <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="MemberForm" component={MemberFormScreen} />
+        <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
+        <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

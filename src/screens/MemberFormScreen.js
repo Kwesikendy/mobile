@@ -88,22 +88,20 @@ export default function MemberFormScreen({ navigation }) {
                 finalData.age = calculateAge(formData.dob);
             }
 
+
             // Save to local database
             await saveMember(finalData);
 
             Alert.alert(
                 '✅ Success',
                 online
-                    ? 'Member saved! Syncing to server...'
-                    : 'Member saved offline. Will sync when online.',
+                    ? 'Member saved and synced to server!'
+                    : 'Member saved offline. Will auto-sync when online.',
                 [
                     {
                         text: 'OK',
                         onPress: () => {
                             setFormData({});
-                            if (online) {
-                                sync();
-                            }
                         },
                     },
                 ]
@@ -129,7 +127,13 @@ export default function MemberFormScreen({ navigation }) {
 
     const shouldShowField = (field) => {
         if (!field.conditional) return true;
-        return formData[field.conditional.field] === field.conditional.value;
+        const fieldValue = formData[field.conditional.field];
+        // If negate is true, show field when value does NOT match
+        if (field.conditional.negate) {
+            return fieldValue !== field.conditional.value;
+        }
+        // Otherwise, show field when value matches
+        return fieldValue === field.conditional.value;
     };
 
     const getFieldIcon = (fieldName) => {
@@ -340,28 +344,6 @@ export default function MemberFormScreen({ navigation }) {
                     </LinearGradient>
                 </TouchableOpacity>
 
-                {pendingCount > 0 && online && (
-                    <TouchableOpacity style={styles.syncButton} onPress={async () => {
-                        const result = await sync();
-                        if (result.success) {
-                            Alert.alert('✅ Sync Complete', result.message || 'All data synced successfully!');
-                        } else {
-                            Alert.alert('❌ Sync Failed', result.message || 'Could not sync data. Please try again.');
-                        }
-                    }} disabled={isSyncing}>
-                        <View style={styles.syncButtonContent}>
-                            {isSyncing ? (
-                                <ActivityIndicator color="#1e3a8a" size="small" />
-                            ) : (
-                                <>
-                                    <Ionicons name="sync-circle" size={20} color="#1e3a8a" />
-                                    <Text style={styles.syncButtonText}>Sync Now ({pendingCount})</Text>
-                                </>
-                            )}
-                        </View>
-                    </TouchableOpacity>
-                )}
-
                 <View style={styles.footer}>
                     <Ionicons name="shield-checkmark" size={16} color="#999" />
                     <Text style={styles.footerText}>Your data is secure and encrypted</Text>
@@ -375,12 +357,12 @@ const getDefaultSchema = () => [
     { name: 'firstName', label: 'First Name', type: 'text', required: true },
     { name: 'lastName', label: 'Last Name', type: 'text', required: true },
     { name: 'dob', label: 'Date of Birth', type: 'date', required: false },
-    { name: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Other'], required: false },
+    { name: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female'], required: false },
     { name: 'phone', label: 'Phone Number', type: 'text', required: false },
     { name: 'address', label: 'Address', type: 'textarea', required: false },
     { name: 'baptized', label: 'Baptized?', type: 'boolean', required: false },
-    { name: 'waterBaptized', label: 'Water Baptism?', type: 'boolean', required: false },
-    { name: 'holyGhostBaptized', label: 'Holy Ghost Baptism?', type: 'boolean', required: false },
+    { name: 'waterBaptized', label: 'Water Baptism?', type: 'boolean', required: false, conditional: { field: 'baptized', value: true } },
+    { name: 'holyGhostBaptized', label: 'Holy Ghost Baptism?', type: 'boolean', required: false, conditional: { field: 'baptized', value: true } },
     { name: 'presidingElder', label: 'Presiding Elder Name', type: 'text', required: false },
     { name: 'working', label: 'Working?', type: 'boolean', required: false },
     {
@@ -391,7 +373,7 @@ const getDefaultSchema = () => [
         conditional: { field: 'working', value: true },
     },
     { name: 'maritalStatus', label: 'Marital Status', type: 'select', options: ['Single', 'Married', 'Divorced', 'Widowed'], required: false },
-    { name: 'childrenCount', label: 'Number of Children', type: 'number', required: false },
+    { name: 'childrenCount', label: 'Number of Children', type: 'number', required: false, conditional: { field: 'maritalStatus', value: 'Single', negate: true } },
     { name: 'ministry', label: 'Ministry/Department', type: 'select', options: ['Choir', 'Ushering', 'Youth', 'Prayer', 'Other'], required: false },
     { name: 'joinedDate', label: 'Date Joined Church', type: 'date', required: false },
     { name: 'prayerRequests', label: 'Prayer Requests', type: 'textarea', required: false },
