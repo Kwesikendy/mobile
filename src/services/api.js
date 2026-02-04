@@ -3,8 +3,10 @@ import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Change this to your backend URL (local or deployed)
+// For testing on phone, use your computer's WiFi IP address
+// Your IP: 192.168.194.36 (from ipconfig Wi-Fi adapter)
 const API_BASE_URL = __DEV__
-    ? 'http://localhost:5000/api'
+    ? 'http://192.168.194.36:5000/api'  // Your computer's WiFi IP
     : 'https://your-render-app.onrender.com/api';
 
 const api = axios.create({

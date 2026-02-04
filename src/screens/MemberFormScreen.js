@@ -10,8 +10,11 @@ import {
     Switch,
     ActivityIndicator,
     Platform,
+    Animated,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { saveMember } from '../services/database';
 import { fetchFormSchema, isOnline } from '../services/api';
 import { getCachedFormSchema, cacheFormSchema } from '../services/database';
@@ -23,9 +26,15 @@ export default function MemberFormScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const { sync, isSyncing, isOnline: online, pendingCount } = useSync();
+    const fadeAnim = useState(new Animated.Value(0))[0];
 
     useEffect(() => {
         loadFormSchema();
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+        }).start();
     }, []);
 
     const loadFormSchema = async () => {
@@ -83,7 +92,7 @@ export default function MemberFormScreen({ navigation }) {
             await saveMember(finalData);
 
             Alert.alert(
-                'Success',
+                '✅ Success',
                 online
                     ? 'Member saved! Syncing to server...'
                     : 'Member saved offline. Will sync when online.',
@@ -123,87 +132,132 @@ export default function MemberFormScreen({ navigation }) {
         return formData[field.conditional.field] === field.conditional.value;
     };
 
+    const getFieldIcon = (fieldName) => {
+        const iconMap = {
+            firstName: 'person',
+            lastName: 'people',
+            dob: 'calendar',
+            gender: 'male-female',
+            phone: 'call',
+            address: 'location',
+            baptized: 'water',
+            waterBaptized: 'water-outline',
+            holyGhostBaptized: 'flame',
+            presidingElder: 'shield-checkmark',
+            working: 'briefcase',
+            occupation: 'business',
+            maritalStatus: 'heart',
+            childrenCount: 'people-circle',
+            ministry: 'musical-notes',
+            joinedDate: 'calendar-outline',
+            prayerRequests: 'chatbubbles',
+        };
+        return iconMap[fieldName] || 'document-text';
+    };
+
     const renderField = (field) => {
         if (!shouldShowField(field)) return null;
 
         const value = formData[field.name];
+        const icon = getFieldIcon(field.name);
 
         switch (field.type) {
             case 'text':
             case 'date':
                 return (
-                    <View key={field.name} style={styles.fieldContainer}>
-                        <Text style={styles.label}>
-                            {field.label} {field.required && <Text style={styles.required}>*</Text>}
-                        </Text>
-                        <TextInput
-                            style={styles.input}
-                            value={value || ''}
-                            onChangeText={(text) => setFormData({ ...formData, [field.name]: text })}
-                            placeholder={`Enter ${field.label.toLowerCase()}`}
-                            placeholderTextColor="#999"
-                        />
-                    </View>
+                    <Animated.View key={field.name} style={[styles.fieldContainer, { opacity: fadeAnim }]}>
+                        <View style={styles.labelRow}>
+                            <Ionicons name={icon} size={20} color="#1e3a8a" style={styles.labelIcon} />
+                            <Text style={styles.label}>
+                                {field.label} {field.required && <Text style={styles.required}>*</Text>}
+                            </Text>
+                        </View>
+                        <View style={styles.inputWrapper}>
+                            <TextInput
+                                style={styles.input}
+                                value={value || ''}
+                                onChangeText={(text) => setFormData({ ...formData, [field.name]: text })}
+                                placeholder={`Enter ${field.label.toLowerCase()}`}
+                                placeholderTextColor="#999"
+                            />
+                        </View>
+                    </Animated.View>
                 );
 
             case 'number':
                 return (
-                    <View key={field.name} style={styles.fieldContainer}>
-                        <Text style={styles.label}>
-                            {field.label} {field.required && <Text style={styles.required}>*</Text>}
-                        </Text>
-                        <TextInput
-                            style={styles.input}
-                            value={value ? String(value) : ''}
-                            onChangeText={(text) => setFormData({ ...formData, [field.name]: parseInt(text) || 0 })}
-                            placeholder={`Enter ${field.label.toLowerCase()}`}
-                            placeholderTextColor="#999"
-                            keyboardType="numeric"
-                        />
-                    </View>
+                    <Animated.View key={field.name} style={[styles.fieldContainer, { opacity: fadeAnim }]}>
+                        <View style={styles.labelRow}>
+                            <Ionicons name={icon} size={20} color="#1e3a8a" style={styles.labelIcon} />
+                            <Text style={styles.label}>
+                                {field.label} {field.required && <Text style={styles.required}>*</Text>}
+                            </Text>
+                        </View>
+                        <View style={styles.inputWrapper}>
+                            <TextInput
+                                style={styles.input}
+                                value={value ? String(value) : ''}
+                                onChangeText={(text) => setFormData({ ...formData, [field.name]: parseInt(text) || 0 })}
+                                placeholder={`Enter ${field.label.toLowerCase()}`}
+                                placeholderTextColor="#999"
+                                keyboardType="numeric"
+                            />
+                        </View>
+                    </Animated.View>
                 );
 
             case 'textarea':
                 return (
-                    <View key={field.name} style={styles.fieldContainer}>
-                        <Text style={styles.label}>
-                            {field.label} {field.required && <Text style={styles.required}>*</Text>}
-                        </Text>
-                        <TextInput
-                            style={[styles.input, styles.textarea]}
-                            value={value || ''}
-                            onChangeText={(text) => setFormData({ ...formData, [field.name]: text })}
-                            placeholder={`Enter ${field.label.toLowerCase()}`}
-                            placeholderTextColor="#999"
-                            multiline
-                            numberOfLines={4}
-                        />
-                    </View>
+                    <Animated.View key={field.name} style={[styles.fieldContainer, { opacity: fadeAnim }]}>
+                        <View style={styles.labelRow}>
+                            <Ionicons name={icon} size={20} color="#1e3a8a" style={styles.labelIcon} />
+                            <Text style={styles.label}>
+                                {field.label} {field.required && <Text style={styles.required}>*</Text>}
+                            </Text>
+                        </View>
+                        <View style={styles.inputWrapper}>
+                            <TextInput
+                                style={[styles.input, styles.textarea]}
+                                value={value || ''}
+                                onChangeText={(text) => setFormData({ ...formData, [field.name]: text })}
+                                placeholder={`Enter ${field.label.toLowerCase()}`}
+                                placeholderTextColor="#999"
+                                multiline
+                                numberOfLines={4}
+                            />
+                        </View>
+                    </Animated.View>
                 );
 
             case 'boolean':
                 return (
-                    <View key={field.name} style={styles.fieldContainer}>
+                    <Animated.View key={field.name} style={[styles.fieldContainer, { opacity: fadeAnim }]}>
                         <View style={styles.switchRow}>
-                            <Text style={styles.label}>
-                                {field.label} {field.required && <Text style={styles.required}>*</Text>}
-                            </Text>
+                            <View style={styles.labelRow}>
+                                <Ionicons name={icon} size={20} color="#1e3a8a" style={styles.labelIcon} />
+                                <Text style={styles.label}>
+                                    {field.label} {field.required && <Text style={styles.required}>*</Text>}
+                                </Text>
+                            </View>
                             <Switch
                                 value={value || false}
                                 onValueChange={(val) => setFormData({ ...formData, [field.name]: val })}
-                                trackColor={{ false: '#ccc', true: '#4CAF50' }}
-                                thumbColor={value ? '#fff' : '#f4f3f4'}
+                                trackColor={{ false: '#ccc', true: '#3b82f6' }}
+                                thumbColor={value ? '#1e3a8a' : '#f4f3f4'}
                             />
                         </View>
-                    </View>
+                    </Animated.View>
                 );
 
             case 'select':
                 return (
-                    <View key={field.name} style={styles.fieldContainer}>
-                        <Text style={styles.label}>
-                            {field.label} {field.required && <Text style={styles.required}>*</Text>}
-                        </Text>
+                    <Animated.View key={field.name} style={[styles.fieldContainer, { opacity: fadeAnim }]}>
+                        <View style={styles.labelRow}>
+                            <Ionicons name={icon} size={20} color="#1e3a8a" style={styles.labelIcon} />
+                            <Text style={styles.label}>
+                                {field.label} {field.required && <Text style={styles.required}>*</Text>}
+                            </Text>
+                        </View>
                         <View style={styles.pickerContainer}>
                             <Picker
                                 selectedValue={value || ''}
@@ -216,7 +270,7 @@ export default function MemberFormScreen({ navigation }) {
                                 ))}
                             </Picker>
                         </View>
-                    </View>
+                    </Animated.View>
                 );
 
             default:
@@ -226,25 +280,40 @@ export default function MemberFormScreen({ navigation }) {
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#1e3a8a" />
+            <LinearGradient colors={['#1e3a8a', '#3b82f6']} style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#fff" />
                 <Text style={styles.loadingText}>Loading form...</Text>
-            </View>
+            </LinearGradient>
         );
     }
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Church Member Registration</Text>
+            <LinearGradient colors={['#1e3a8a', '#2563eb', '#3b82f6']} style={styles.header}>
+                <View style={styles.headerContent}>
+                    <MaterialCommunityIcons name="church" size={32} color="#fff" />
+                    <View style={styles.headerTextContainer}>
+                        <Text style={styles.title}>Moore District</Text>
+                        <Text style={styles.subtitle}>Member Registration</Text>
+                    </View>
+                </View>
                 <View style={styles.statusBar}>
-                    <View style={[styles.statusDot, { backgroundColor: online ? '#4CAF50' : '#f44336' }]} />
-                    <Text style={styles.statusText}>{online ? 'Online' : 'Offline'}</Text>
+                    <View style={styles.statusItem}>
+                        <Ionicons
+                            name={online ? 'cloud-done' : 'cloud-offline'}
+                            size={16}
+                            color={online ? '#4ade80' : '#fbbf24'}
+                        />
+                        <Text style={styles.statusText}>{online ? 'Online' : 'Offline'}</Text>
+                    </View>
                     {pendingCount > 0 && (
-                        <Text style={styles.pendingText}>({pendingCount} pending sync)</Text>
+                        <View style={styles.pendingBadge}>
+                            <Ionicons name="sync" size={14} color="#fff" />
+                            <Text style={styles.pendingText}>{pendingCount} pending</Text>
+                        </View>
                     )}
                 </View>
-            </View>
+            </LinearGradient>
 
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 {schema.map((field) => renderField(field))}
@@ -254,26 +323,49 @@ export default function MemberFormScreen({ navigation }) {
                     onPress={handleSubmit}
                     disabled={submitting}
                 >
-                    {submitting ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.submitButtonText}>Submit</Text>
-                    )}
+                    <LinearGradient
+                        colors={submitting ? ['#999', '#666'] : ['#1e3a8a', '#3b82f6']}
+                        style={styles.buttonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                    >
+                        {submitting ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <>
+                                <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                                <Text style={styles.submitButtonText}>Submit Registration</Text>
+                            </>
+                        )}
+                    </LinearGradient>
                 </TouchableOpacity>
 
                 {pendingCount > 0 && online && (
-                    <TouchableOpacity
-                        style={styles.syncButton}
-                        onPress={sync}
-                        disabled={isSyncing}
-                    >
-                        {isSyncing ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <Text style={styles.syncButtonText}>Sync Now ({pendingCount})</Text>
-                        )}
+                    <TouchableOpacity style={styles.syncButton} onPress={async () => {
+                        const result = await sync();
+                        if (result.success) {
+                            Alert.alert('✅ Sync Complete', result.message || 'All data synced successfully!');
+                        } else {
+                            Alert.alert('❌ Sync Failed', result.message || 'Could not sync data. Please try again.');
+                        }
+                    }} disabled={isSyncing}>
+                        <View style={styles.syncButtonContent}>
+                            {isSyncing ? (
+                                <ActivityIndicator color="#1e3a8a" size="small" />
+                            ) : (
+                                <>
+                                    <Ionicons name="sync-circle" size={20} color="#1e3a8a" />
+                                    <Text style={styles.syncButtonText}>Sync Now ({pendingCount})</Text>
+                                </>
+                            )}
+                        </View>
                     </TouchableOpacity>
                 )}
+
+                <View style={styles.footer}>
+                    <Ionicons name="shield-checkmark" size={16} color="#999" />
+                    <Text style={styles.footerText}>Your data is secure and encrypted</Text>
+                </View>
             </ScrollView>
         </View>
     );
@@ -314,44 +406,64 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
     },
     loadingText: {
-        marginTop: 10,
+        marginTop: 16,
         fontSize: 16,
-        color: '#666',
+        color: '#fff',
+        fontWeight: '600',
     },
     header: {
-        backgroundColor: '#1e3a8a',
-        padding: 20,
         paddingTop: Platform.OS === 'ios' ? 50 : 20,
+        paddingBottom: 20,
+        paddingHorizontal: 20,
+    },
+    headerContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    headerTextContainer: {
+        marginLeft: 12,
     },
     title: {
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: 'bold',
         color: '#fff',
-        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 14,
+        color: '#e0e7ff',
+        marginTop: 2,
     },
     statusBar: {
         flexDirection: 'row',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: 10,
     },
-    statusDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        marginRight: 8,
+    statusItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
     },
     statusText: {
         color: '#fff',
-        fontSize: 14,
+        fontSize: 13,
+        fontWeight: '500',
+    },
+    pendingBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(251, 191, 36, 0.3)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        gap: 4,
     },
     pendingText: {
-        color: '#ffd700',
+        color: '#fbbf24',
         fontSize: 12,
-        marginLeft: 5,
+        fontWeight: '600',
     },
     scrollView: {
         flex: 1,
@@ -362,21 +474,33 @@ const styles = StyleSheet.create({
     fieldContainer: {
         marginBottom: 20,
     },
+    labelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    labelIcon: {
+        marginRight: 8,
+    },
     label: {
         fontSize: 16,
         fontWeight: '600',
         color: '#333',
-        marginBottom: 8,
     },
     required: {
-        color: '#f44336',
+        color: '#ef4444',
+    },
+    inputWrapper: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     input: {
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        padding: 12,
+        padding: 14,
         fontSize: 16,
         color: '#333',
     },
@@ -388,26 +512,47 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        backgroundColor: '#fff',
+        padding: 14,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     pickerContainer: {
         backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
+        borderRadius: 12,
         overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     picker: {
         height: 50,
     },
     submitButton: {
-        backgroundColor: '#1e3a8a',
-        padding: 16,
-        borderRadius: 8,
-        alignItems: 'center',
         marginTop: 10,
+        borderRadius: 12,
+        overflow: 'hidden',
+        shadowColor: '#1e3a8a',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    buttonGradient: {
+        flexDirection: 'row',
+        padding: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
     },
     submitButtonDisabled: {
-        backgroundColor: '#999',
+        opacity: 0.6,
     },
     submitButtonText: {
         color: '#fff',
@@ -415,15 +560,35 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     syncButton: {
-        backgroundColor: '#4CAF50',
+        marginTop: 12,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: '#1e3a8a',
+        overflow: 'hidden',
+    },
+    syncButtonContent: {
+        flexDirection: 'row',
         padding: 14,
-        borderRadius: 8,
         alignItems: 'center',
-        marginTop: 10,
+        justifyContent: 'center',
+        gap: 8,
     },
     syncButtonText: {
-        color: '#fff',
+        color: '#1e3a8a',
         fontSize: 16,
         fontWeight: '600',
+    },
+    footer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 30,
+        marginBottom: 20,
+        gap: 6,
+    },
+    footerText: {
+        color: '#999',
+        fontSize: 12,
     },
 });
