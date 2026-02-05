@@ -32,7 +32,7 @@ export const initDatabase = async () => {
         childrenCount INTEGER,
         ministry TEXT,
         joinedDate TEXT,
-        prayerRequests TEXT,
+        picture TEXT,
         metadata TEXT,
         syncStatus TEXT DEFAULT 'pending',
         createdAt TEXT NOT NULL,
@@ -77,7 +77,7 @@ export const saveMember = async (memberData) => {
         id, firstName, lastName, dob, age, gender, phone, address,
         baptized, waterBaptized, holyGhostBaptized, presidingElder,
         working, occupation, maritalStatus, childrenCount, ministry,
-        joinedDate, prayerRequests, metadata, syncStatus, createdAt, updatedAt
+        joinedDate, picture, metadata, syncStatus, createdAt, updatedAt
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 id,
@@ -98,7 +98,7 @@ export const saveMember = async (memberData) => {
                 memberData.childrenCount || null,
                 memberData.ministry || null,
                 memberData.joinedDate || null,
-                memberData.prayerRequests || null,
+                memberData.picture || null,
                 memberData.metadata ? JSON.stringify(memberData.metadata) : null,
                 'pending',
                 memberData.createdAt || now,

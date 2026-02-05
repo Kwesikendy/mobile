@@ -13,7 +13,9 @@ import {
     Platform,
     Animated,
     KeyboardAvoidingView,
+    Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -185,7 +187,7 @@ export default function MemberFormScreen({ navigation }) {
             childrenCount: 'people-circle',
             ministry: 'musical-notes',
             joinedDate: 'calendar-outline',
-            prayerRequests: 'chatbubbles',
+            picture: 'image',
         };
         return iconMap[fieldName] || 'document-text';
     };
@@ -337,6 +339,42 @@ export default function MemberFormScreen({ navigation }) {
                     </Animated.View>
                 );
 
+            case 'image':
+                return (
+                    <Animated.View key={field.name} style={[styles.fieldContainer, { opacity: fadeAnim }]}>
+                        <View style={styles.labelRow}>
+                            <Ionicons name={icon} size={20} color="#1e3a8a" style={styles.labelIcon} />
+                            <Text style={styles.label}>
+                                {field.label} {field.required && <Text style={styles.required}>*</Text>}
+                            </Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.imagePickerButton}
+                            onPress={async () => {
+                                const result = await ImagePicker.launchImageLibraryAsync({
+                                    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                                    allowsEditing: true,
+                                    aspect: [1, 1],
+                                    quality: 0.5,
+                                    base64: true,
+                                });
+                                if (!result.canceled && result.assets[0].base64) {
+                                    setFormData({ ...formData, [field.name]: `data:image/jpeg;base64,${result.assets[0].base64}` });
+                                }
+                            }}
+                        >
+                            {value ? (
+                                <Image source={{ uri: value }} style={styles.selectedImage} />
+                            ) : (
+                                <View style={styles.imagePlaceholder}>
+                                    <Ionicons name="camera" size={40} color="#999" />
+                                    <Text style={styles.imagePlaceholderText}>Tap to select photo</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    </Animated.View>
+                );
+
             default:
                 return null;
         }
@@ -452,9 +490,9 @@ const getDefaultSchema = () => [
     },
     { name: 'maritalStatus', label: 'Marital Status', type: 'select', options: ['Single', 'Married', 'Divorced', 'Widowed'], required: false },
     { name: 'childrenCount', label: 'Number of Children', type: 'number', required: false, conditional: { field: 'maritalStatus', value: 'Single', negate: true } },
-    { name: 'ministry', label: 'Ministry/Department', type: 'select', options: ['Choir', 'Ushering', 'Youth', 'Prayer', 'Other'], required: false },
+    { name: 'ministry', label: 'Ministry/Department', type: 'text', placeholder: 'e.g., Choir, Ushering, Youth, Prayer, Media', required: false },
     { name: 'joinedDate', label: 'Date Joined Church', type: 'date', required: false },
-    { name: 'prayerRequests', label: 'Prayer Requests', type: 'textarea', required: false },
+    { name: 'picture', label: 'Profile Picture', type: 'image', required: false },
 ];
 
 const styles = StyleSheet.create({
@@ -686,5 +724,29 @@ const styles = StyleSheet.create({
     },
     dateIcon: {
         marginLeft: 8,
+    },
+    imagePickerButton: {
+        marginTop: 4,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: 12,
+        overflow: 'hidden',
+        backgroundColor: '#fff',
+    },
+    imagePlaceholder: {
+        height: 200,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+    },
+    imagePlaceholderText: {
+        marginTop: 8,
+        color: '#999',
+        fontSize: 14,
+    },
+    selectedImage: {
+        width: '100%',
+        height: 200,
+        resizeMode: 'cover',
     },
 });
