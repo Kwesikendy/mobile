@@ -6,6 +6,8 @@ import HomeScreen from './src/screens/HomeScreen';
 import MemberFormScreen from './src/screens/MemberFormScreen';
 import AdminLoginScreen from './src/screens/AdminLoginScreen';
 import AdminDashboardScreen from './src/screens/AdminDashboardScreen';
+import SchemaBuilderScreen from './src/screens/SchemaBuilderScreen';
+import MembersListScreen from './src/screens/MembersListScreen';
 import { initDatabase } from './src/services/database';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
@@ -46,6 +48,8 @@ export default function App() {
         <Stack.Screen name="MemberForm" component={MemberFormScreen} />
         <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
         <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+        <Stack.Screen name="SchemaBuilder" component={SchemaBuilderScreen} />
+        <Stack.Screen name="MembersList" component={MembersListScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

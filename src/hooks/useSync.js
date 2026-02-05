@@ -70,10 +70,10 @@ export const useSync = () => {
     // Auto-sync when coming online
     useEffect(() => {
         if (isOnline && pendingCount > 0 && !isSyncing) {
-            // Auto-sync immediately when online
+            // Auto-sync when online (debounced)
             const timer = setTimeout(() => {
                 sync();
-            }, 500);
+            }, 5000);
 
             return () => clearTimeout(timer);
         }

@@ -3,6 +3,11 @@ import * as SQLite from 'expo-sqlite';
 let db = null;
 
 export const initDatabase = async () => {
+    if (db) {
+        console.log('Using existing database connection');
+        return db;
+    }
+
     try {
         db = await SQLite.openDatabaseAsync('church_members.db');
 

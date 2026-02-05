@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
     View,
     Text,
@@ -11,7 +12,9 @@ import {
     ActivityIndicator,
     Platform,
     Animated,
+    KeyboardAvoidingView,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,8 +31,30 @@ export default function MemberFormScreen({ navigation }) {
     const { sync, isSyncing, isOnline: online, pendingCount } = useSync();
     const fadeAnim = useState(new Animated.Value(0))[0];
 
+    // Date Picker State
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [currentDateField, setCurrentDateField] = useState(null);
+
+    const handleDateChange = (event, selectedDate) => {
+        setShowDatePicker(false);
+        if (selectedDate && currentDateField) {
+            const formattedDate = selectedDate.toISOString().split('T')[0];
+            setFormData({ ...formData, [currentDateField]: formattedDate });
+        }
+    };
+
+    const openDatePicker = (fieldName) => {
+        setCurrentDateField(fieldName);
+        setShowDatePicker(true);
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            loadFormSchema();
+        }, [])
+    );
+
     useEffect(() => {
-        loadFormSchema();
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 800,
@@ -92,6 +117,11 @@ export default function MemberFormScreen({ navigation }) {
             // Save to local database
             await saveMember(finalData);
 
+            // Trigger immediate sync if online
+            if (online) {
+                await sync();
+            }
+
             Alert.alert(
                 '✅ Success',
                 online
@@ -102,6 +132,7 @@ export default function MemberFormScreen({ navigation }) {
                         text: 'OK',
                         onPress: () => {
                             setFormData({});
+                            navigation.goBack();
                         },
                     },
                 ]
@@ -167,7 +198,6 @@ export default function MemberFormScreen({ navigation }) {
 
         switch (field.type) {
             case 'text':
-            case 'date':
                 return (
                     <Animated.View key={field.name} style={[styles.fieldContainer, { opacity: fadeAnim }]}>
                         <View style={styles.labelRow}>
@@ -185,6 +215,31 @@ export default function MemberFormScreen({ navigation }) {
                                 placeholderTextColor="#999"
                             />
                         </View>
+                    </Animated.View>
+                );
+
+            case 'date':
+                return (
+                    <Animated.View key={field.name} style={[styles.fieldContainer, { opacity: fadeAnim }]}>
+                        <View style={styles.labelRow}>
+                            <Ionicons name={icon} size={20} color="#1e3a8a" style={styles.labelIcon} />
+                            <Text style={styles.label}>
+                                {field.label} {field.required && <Text style={styles.required}>*</Text>}
+                            </Text>
+                        </View>
+                        <TouchableOpacity onPress={() => openDatePicker(field.name)}>
+                            <View style={styles.inputWrapper}>
+                                <Text style={[styles.input, !value && { color: '#999' }]}>
+                                    {value || `Select ${field.label.toLowerCase()}`}
+                                </Text>
+                                <Ionicons
+                                    name="calendar-outline"
+                                    size={20}
+                                    color="#999"
+                                    style={styles.dateIcon}
+                                />
+                            </View>
+                        </TouchableOpacity>
                     </Animated.View>
                 );
 
@@ -262,18 +317,23 @@ export default function MemberFormScreen({ navigation }) {
                                 {field.label} {field.required && <Text style={styles.required}>*</Text>}
                             </Text>
                         </View>
-                        <View style={styles.pickerContainer}>
-                            <Picker
-                                selectedValue={value || ''}
-                                onValueChange={(val) => setFormData({ ...formData, [field.name]: val })}
-                                style={styles.picker}
-                            >
-                                <Picker.Item label={`Select ${field.label}`} value="" />
-                                {field.options?.map((option) => (
-                                    <Picker.Item key={option} label={option} value={option} />
-                                ))}
-                            </Picker>
-                        </View>
+                        <TouchableOpacity
+                            style={styles.pickerButton}
+                            onPress={() => {
+                                Alert.alert(`${field.label}`, 'Select an option', [
+                                    { text: 'Cancel', style: 'cancel' },
+                                    ...field.options.map(opt => ({
+                                        text: opt,
+                                        onPress: () => setFormData({ ...formData, [field.name]: opt })
+                                    }))
+                                ]);
+                            }}
+                        >
+                            <Text style={[styles.pickerText, !value && styles.placeholderText]}>
+                                {value || `Select ${field.label}`}
+                            </Text>
+                            <Ionicons name="chevron-down" size={20} color="#666" />
+                        </TouchableOpacity>
                     </Animated.View>
                 );
 
@@ -292,7 +352,10 @@ export default function MemberFormScreen({ navigation }) {
     }
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.container}
+        >
             <LinearGradient colors={['#1e3a8a', '#2563eb', '#3b82f6']} style={styles.header}>
                 <View style={styles.headerContent}>
                     <MaterialCommunityIcons name="church" size={32} color="#fff" />
@@ -310,12 +373,17 @@ export default function MemberFormScreen({ navigation }) {
                         />
                         <Text style={styles.statusText}>{online ? 'Online' : 'Offline'}</Text>
                     </View>
-                    {pendingCount > 0 && (
+                    {isSyncing ? (
+                        <View style={styles.syncingBadge}>
+                            <ActivityIndicator size="small" color="#fff" />
+                            <Text style={styles.syncingText}>Syncing...</Text>
+                        </View>
+                    ) : pendingCount > 0 ? (
                         <View style={styles.pendingBadge}>
-                            <Ionicons name="sync" size={14} color="#fff" />
+                            <Ionicons name="time" size={14} color="#fff" />
                             <Text style={styles.pendingText}>{pendingCount} pending</Text>
                         </View>
-                    )}
+                    ) : null}
                 </View>
             </LinearGradient>
 
@@ -349,7 +417,17 @@ export default function MemberFormScreen({ navigation }) {
                     <Text style={styles.footerText}>Your data is secure and encrypted</Text>
                 </View>
             </ScrollView>
-        </View>
+
+            {showDatePicker && (
+                <DateTimePicker
+                    value={formData[currentDateField] ? new Date(formData[currentDateField]) : new Date()}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleDateChange}
+                    maximumDate={new Date()} // Can't pick future dates
+                />
+            )}
+        </KeyboardAvoidingView>
     );
 }
 
@@ -490,6 +568,9 @@ const styles = StyleSheet.create({
         height: 100,
         textAlignVertical: 'top',
     },
+    dateIcon: {
+        marginLeft: 'auto',
+    },
     switchRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -572,5 +653,38 @@ const styles = StyleSheet.create({
     footerText: {
         color: '#999',
         fontSize: 12,
+    },
+    pickerButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: 12,
+        padding: 16,
+        marginTop: 4,
+    },
+    pickerText: {
+        fontSize: 16,
+        color: '#1e293b',
+    },
+    placeholderText: {
+        color: '#999',
+    },
+    pickerContainer: {
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: 12,
+        marginTop: 4,
+        paddingHorizontal: 8,
+        backgroundColor: '#fff',
+    },
+    picker: {
+        height: 50,
+        width: '100%',
+    },
+    dateIcon: {
+        marginLeft: 8,
     },
 });

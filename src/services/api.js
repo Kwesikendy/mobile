@@ -4,10 +4,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Change this to your backend URL (local or deployed)
 // For testing on phone, use your computer's WiFi IP address
-// Your IP: 192.168.194.36 (from ipconfig Wi-Fi adapter)
-const API_BASE_URL = __DEV__
-    ? 'http://192.168.194.36:5000/api'  // Your computer's WiFi IP
-    : 'https://your-render-app.onrender.com/api';
+// Your IP: 192.168.194.213 (Using secondary Wi-Fi adapter)
+const API_BASE_URL = 'https://moore-894m.onrender.com/api';
+// const API_BASE_URL = __DEV__
+//     ? 'http://192.168.194.213:5000/api'  // Matching Metro bundler IP
+//     : 'https://moore-894m.onrender.com/api';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -30,6 +31,20 @@ export const fetchFormSchema = async () => {
         return response.data;
     } catch (error) {
         console.error('Error fetching form schema:', error);
+        throw error;
+    }
+};
+
+// Update form schema (admin only)
+export const updateFormSchema = async (elements) => {
+    try {
+        const token = await getAdminToken();
+        const response = await api.post('/schema', { elements }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error updating schema:', error);
         throw error;
     }
 };
@@ -77,6 +92,19 @@ export const fetchAllMembers = async () => {
         return response.data;
     } catch (error) {
         console.error('Error fetching members:', error);
+        throw error;
+    }
+};
+
+export const deleteMember = async (id) => {
+    try {
+        const token = await getAdminToken();
+        const response = await api.delete(`/members/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting member:', error);
         throw error;
     }
 };

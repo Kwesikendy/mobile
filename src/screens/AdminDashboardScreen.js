@@ -177,12 +177,43 @@ export default function AdminDashboardScreen({ navigation }) {
                     )}
                 </View>
 
+                {/* Admin Actions */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Admin Controls</Text>
+                    <TouchableOpacity
+                        style={styles.actionCard}
+                        onPress={() => navigation.navigate('SchemaBuilder')}
+                    >
+                        <View style={[styles.actionIcon, { backgroundColor: '#fef3c7' }]}>
+                            <Ionicons name="construct" size={24} color="#b45309" />
+                        </View>
+                        <View style={styles.actionInfo}>
+                            <Text style={styles.actionTitle}>Form Builder</Text>
+                            <Text style={styles.actionDesc}>Edit registration form fields</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={24} color="#cbd5e1" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.actionCard}
+                        onPress={() => navigation.navigate('MembersList')}
+                    >
+                        <View style={[styles.actionIcon, { backgroundColor: '#dbeafe' }]}>
+                            <Ionicons name="people" size={24} color="#1e3a8a" />
+                        </View>
+                        <View style={styles.actionInfo}>
+                            <Text style={styles.actionTitle}>Manage Members</Text>
+                            <Text style={styles.actionDesc}>Edit or delete members</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={24} color="#cbd5e1" />
+                    </TouchableOpacity>
+                </View>
+
                 {/* Info Card */}
                 <View style={styles.infoCard}>
-                    <Ionicons name="information-circle" size={24} color="#3b82f6" />
+                    <Ionicons name="shield-checkmark" size={24} color="#3b82f6" />
                     <Text style={styles.infoText}>
-                        For full analytics and member management, please use the web dashboard at
-                        http://localhost:5173
+                        You are logged in as Admin. Changes to the Form Builder will be reflected for all users immediately.
                     </Text>
                 </View>
             </ScrollView>
@@ -195,6 +226,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f5f5f5',
     },
+    // ... (Keep existing styles)
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -279,6 +311,30 @@ const styles = StyleSheet.create({
         color: '#1e293b',
         marginBottom: 16,
     },
+    // New Action Card Styles
+    actionCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    actionIcon: {
+        width: 48, height: 48, borderRadius: 24,
+        justifyContent: 'center', alignItems: 'center',
+        marginRight: 16,
+    },
+    actionInfo: { flex: 1 },
+    actionTitle: { fontSize: 16, fontWeight: '600', color: '#1e293b' },
+    actionDesc: { fontSize: 13, color: '#64748b' },
+
+    // Existing Member Card Styles...
     memberCard: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -293,81 +349,20 @@ const styles = StyleSheet.create({
         shadowRadius: 2,
         elevation: 2,
     },
-    memberInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    memberAvatar: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: '#3b82f6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    memberInitials: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#fff',
-    },
-    memberDetails: {
-        flex: 1,
-    },
-    memberName: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1e293b',
-        marginBottom: 4,
-    },
-    memberMeta: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    memberPhone: {
-        fontSize: 14,
-        color: '#64748b',
-    },
-    memberBadges: {
-        flexDirection: 'row',
-        gap: 6,
-    },
-    badge: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    baptizedBadge: {
-        backgroundColor: '#dcfce7',
-    },
-    workingBadge: {
-        backgroundColor: '#fef3c7',
-    },
-    emptyState: {
-        alignItems: 'center',
-        paddingVertical: 40,
-    },
-    emptyText: {
-        fontSize: 16,
-        color: '#94a3b8',
-        marginTop: 16,
-    },
-    infoCard: {
-        flexDirection: 'row',
-        backgroundColor: '#eff6ff',
-        padding: 16,
-        margin: 16,
-        borderRadius: 12,
-        gap: 12,
-    },
-    infoText: {
-        flex: 1,
-        fontSize: 13,
-        color: '#1e40af',
-        lineHeight: 18,
-    },
+    // ... Rest of existing styles ensure no breaks
+    memberInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    memberAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#3b82f6', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+    memberInitials: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
+    memberDetails: { flex: 1 },
+    memberName: { fontSize: 16, fontWeight: '600', color: '#1e293b', marginBottom: 4 },
+    memberMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    memberPhone: { fontSize: 14, color: '#64748b' },
+    memberBadges: { flexDirection: 'row', gap: 6 },
+    badge: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+    baptizedBadge: { backgroundColor: '#dcfce7' },
+    workingBadge: { backgroundColor: '#fef3c7' },
+    emptyState: { alignItems: 'center', paddingVertical: 40 },
+    emptyText: { fontSize: 16, color: '#94a3b8', marginTop: 16 },
+    infoCard: { flexDirection: 'row', backgroundColor: '#eff6ff', padding: 16, margin: 16, borderRadius: 12, gap: 12 },
+    infoText: { flex: 1, fontSize: 13, color: '#1e40af', lineHeight: 18 },
 });
