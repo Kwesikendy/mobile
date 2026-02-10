@@ -30,6 +30,7 @@ export default function MemberFormScreen({ navigation }) {
     const [schema, setSchema] = useState([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [schemaVersion, setSchemaVersion] = useState(null);
     const { sync, isSyncing, isOnline: online, pendingCount } = useSync();
     const fadeAnim = useState(new Animated.Value(0))[0];
 
@@ -71,22 +72,31 @@ export default function MemberFormScreen({ navigation }) {
             if (connected) {
                 const serverSchema = await fetchFormSchema();
                 setSchema(serverSchema.elements);
+                setSchemaVersion(serverSchema.version);
                 await cacheFormSchema(serverSchema.version, serverSchema.elements);
             } else {
                 // Load from cache
                 const cached = await getCachedFormSchema();
                 if (cached) {
                     setSchema(cached.elements);
+                    setSchemaVersion(cached.version);
                 } else {
                     // Use default schema
                     setSchema(getDefaultSchema());
+                    setSchemaVersion('Default');
                 }
             }
         } catch (error) {
             console.error('Error loading schema:', error);
             // Fallback to cached or default
             const cached = await getCachedFormSchema();
-            setSchema(cached ? cached.elements : getDefaultSchema());
+            if (cached) {
+                setSchema(cached.elements);
+                setSchemaVersion(cached.version);
+            } else {
+                setSchema(getDefaultSchema());
+                setSchemaVersion('Default');
+            }
         } finally {
             setLoading(false);
         }
@@ -459,7 +469,7 @@ export default function MemberFormScreen({ navigation }) {
                 <View style={styles.headerContent}>
                     <MaterialCommunityIcons name="church" size={32} color="#fff" />
                     <View style={styles.headerTextContainer}>
-                        <Text style={styles.title}>Moore District</Text>
+                        <Text style={styles.title}>Moree</Text>
                         <Text style={styles.subtitle}>Member Registration</Text>
                     </View>
                 </View>
@@ -513,7 +523,7 @@ export default function MemberFormScreen({ navigation }) {
 
                 <View style={styles.footer}>
                     <Ionicons name="shield-checkmark" size={16} color="#999" />
-                    <Text style={styles.footerText}>Your data is secure and encrypted</Text>
+                    <Text style={styles.footerText}>Secure • Schema v{schemaVersion || 'Default'}</Text>
                 </View>
             </ScrollView>
 

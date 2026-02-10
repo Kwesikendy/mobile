@@ -136,7 +136,7 @@ export default function SplashScreen({ navigation }) {
                 >
                     <Text style={styles.mainTitle}>Church of Pentecost</Text>
                     <View style={styles.divider} />
-                    <Text style={styles.subtitle}>Moore District</Text>
+                    <Text style={styles.subtitle}>Moree</Text>
                     <Text style={styles.description}>Member Registration Form</Text>
                 </Animated.View>
 

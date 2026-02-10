@@ -86,7 +86,7 @@ export default function AdminDashboardScreen({ navigation }) {
                 <View style={styles.headerTop}>
                     <View>
                         <Text style={styles.headerTitle}>Admin Dashboard</Text>
-                        <Text style={styles.headerSubtitle}>Moore District</Text>
+                        <Text style={styles.headerSubtitle}>Moree</Text>
                     </View>
                     <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
                         <Ionicons name="log-out" size={24} color="#fff" />

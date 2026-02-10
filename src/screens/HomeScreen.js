@@ -26,7 +26,7 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <Text style={styles.title}>Church of Pentecost</Text>
                 <View style={styles.divider} />
-                <Text style={styles.subtitle}>Moore District</Text>
+                <Text style={styles.subtitle}>Moree</Text>
             </View>
 
             {/* Welcome Text */}
