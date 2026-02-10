@@ -310,6 +310,54 @@ export default function MemberFormScreen({ navigation }) {
                     </Animated.View>
                 );
 
+            case 'multiselect':
+                const selectedValues = value ? String(value).split(',').filter(Boolean) : [];
+                return (
+                    <Animated.View key={field.name} style={[styles.fieldContainer, { opacity: fadeAnim }]}>
+                        <View style={styles.labelRow}>
+                            <Ionicons name={icon} size={20} color="#1e3a8a" style={styles.labelIcon} />
+                            <Text style={styles.label}>
+                                {field.label} {field.required && <Text style={styles.required}>*</Text>}
+                            </Text>
+                        </View>
+                        <View style={styles.multiSelectContainer}>
+                            {field.options.map((option) => {
+                                const isSelected = selectedValues.includes(option);
+                                return (
+                                    <TouchableOpacity
+                                        key={option}
+                                        style={[
+                                            styles.multiSelectOption,
+                                            isSelected && styles.multiSelectOptionSelected,
+                                        ]}
+                                        onPress={() => {
+                                            let newValues;
+                                            if (isSelected) {
+                                                newValues = selectedValues.filter((v) => v !== option);
+                                            } else {
+                                                newValues = [...selectedValues, option];
+                                            }
+                                            setFormData({ ...formData, [field.name]: newValues.join(',') });
+                                        }}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.multiSelectText,
+                                                isSelected && styles.multiSelectTextSelected,
+                                            ]}
+                                        >
+                                            {option}
+                                        </Text>
+                                        {isSelected && (
+                                            <Ionicons name="checkmark-circle" size={16} color="#fff" style={{ marginLeft: 4 }} />
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </Animated.View>
+                );
+
             case 'select':
                 return (
                     <Animated.View key={field.name} style={[styles.fieldContainer, { opacity: fadeAnim }]}>
@@ -348,6 +396,7 @@ export default function MemberFormScreen({ navigation }) {
                                 {field.label} {field.required && <Text style={styles.required}>*</Text>}
                             </Text>
                         </View>
+                        <Text style={styles.imageHint}>⚠️ Keep image under 100KB for best sync performance</Text>
                         <TouchableOpacity
                             style={styles.imagePickerButton}
                             onPress={async () => {
@@ -355,11 +404,23 @@ export default function MemberFormScreen({ navigation }) {
                                     mediaTypes: ImagePicker.MediaTypeOptions.Images,
                                     allowsEditing: true,
                                     aspect: [1, 1],
-                                    quality: 0.5,
+                                    quality: 0.2,
                                     base64: true,
                                 });
                                 if (!result.canceled && result.assets[0].base64) {
-                                    setFormData({ ...formData, [field.name]: `data:image/jpeg;base64,${result.assets[0].base64}` });
+                                    const base64String = `data:image/jpeg;base64,${result.assets[0].base64}`;
+                                    const sizeInKB = Math.round((base64String.length * 3) / 4 / 1024);
+
+                                    if (sizeInKB > 150) {
+                                        Alert.alert(
+                                            '⚠️ Image Too Large',
+                                            `Image size: ${sizeInKB}KB\n\nPlease select a smaller image (under 100KB) or crop it more tightly.`,
+                                            [{ text: 'OK' }]
+                                        );
+                                        return;
+                                    }
+
+                                    setFormData({ ...formData, [field.name]: base64String });
                                 }
                             }}
                         >
@@ -472,12 +533,15 @@ export default function MemberFormScreen({ navigation }) {
 const getDefaultSchema = () => [
     { name: 'firstName', label: 'First Name', type: 'text', required: true },
     { name: 'lastName', label: 'Last Name', type: 'text', required: true },
+    { name: 'otherNames', label: 'Other Names (AKA)', type: 'text', required: false },
     { name: 'dob', label: 'Date of Birth', type: 'date', required: false },
     { name: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female'], required: false },
     { name: 'phone', label: 'Phone Number', type: 'text', required: false },
     { name: 'address', label: 'Address', type: 'textarea', required: false },
+    { name: 'localAssembly', label: 'Local Assembly', type: 'text', required: false },
     { name: 'baptized', label: 'Baptized?', type: 'boolean', required: false },
     { name: 'waterBaptized', label: 'Water Baptism?', type: 'boolean', required: false, conditional: { field: 'baptized', value: true } },
+    { name: 'baptizedBy', label: 'Baptized By', type: 'text', required: false, conditional: { field: 'waterBaptized', value: true } },
     { name: 'holyGhostBaptized', label: 'Holy Ghost Baptism?', type: 'boolean', required: false, conditional: { field: 'baptized', value: true } },
     { name: 'presidingElder', label: 'Presiding Elder Name', type: 'text', required: false },
     { name: 'working', label: 'Working?', type: 'boolean', required: false },
@@ -486,14 +550,37 @@ const getDefaultSchema = () => [
         label: 'Occupation Category',
         type: 'text',
         required: false,
+        placeholder: 'e.g. Student, Artisan, Civil Servant',
         conditional: { field: 'working', value: true },
     },
-    { name: 'maritalStatus', label: 'Marital Status', type: 'select', options: ['Single', 'Married', 'Divorced', 'Widowed'], required: false },
-    { name: 'childrenCount', label: 'Number of Children', type: 'number', required: false, conditional: { field: 'maritalStatus', value: 'Single', negate: true } },
-    { name: 'ministry', label: 'Ministry/Department', type: 'text', placeholder: 'e.g., Choir, Ushering, Youth, Prayer, Media', required: false },
-    { name: 'joinedDate', label: 'Date Joined Church', type: 'date', required: false },
+    {
+        name: 'portfolio',
+        label: 'Portfolio',
+        type: 'select',
+        options: ['Pastor', "Pastor's Wife", 'Elder', 'Deacon', 'Deaconess', 'Member'],
+        required: false,
+    },
+    {
+        name: 'maritalStatus',
+        label: 'Marital Status',
+        type: 'select',
+        options: ['Single', 'Married', 'Divorced', 'Widow'],
+        required: false,
+    },
+    { name: 'childrenCount', label: 'Number of Children', type: 'number', required: false, conditional: { field: 'maritalStatus', value: 'Married' } },
+    {
+        name: 'ministry',
+        label: 'Ministry',
+        type: 'multiselect',
+        options: ['Evangelism', 'Women', 'PEMEM', 'Youth'],
+        required: false,
+    },
+    { name: 'otherResponsibilities', label: 'Other Responsibilities', type: 'text', required: false },
+    { name: 'joinedDate', label: 'Date Joined', type: 'date', required: false },
     { name: 'picture', label: 'Profile Picture', type: 'image', required: false },
 ];
+
+
 
 const styles = StyleSheet.create({
     container: {
@@ -710,6 +797,33 @@ const styles = StyleSheet.create({
     placeholderText: {
         color: '#999',
     },
+    multiSelectContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    multiSelectOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: 20,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    multiSelectOptionSelected: {
+        backgroundColor: '#1e3a8a',
+        borderColor: '#1e3a8a',
+    },
+    multiSelectText: {
+        fontSize: 14,
+        color: '#333',
+    },
+    multiSelectTextSelected: {
+        color: '#fff',
+        fontWeight: '600',
+    },
     pickerContainer: {
         borderWidth: 1,
         borderColor: '#e2e8f0',
@@ -724,6 +838,12 @@ const styles = StyleSheet.create({
     },
     dateIcon: {
         marginLeft: 8,
+    },
+    imageHint: {
+        fontSize: 12,
+        color: '#f59e0b',
+        marginTop: 4,
+        marginBottom: 4,
     },
     imagePickerButton: {
         marginTop: 4,
