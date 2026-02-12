@@ -14,6 +14,7 @@ import {
     Animated,
     KeyboardAvoidingView,
     Image,
+    Modal,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -31,6 +32,7 @@ export default function MemberFormScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [schemaVersion, setSchemaVersion] = useState(null);
+    const [pickerModal, setPickerModal] = useState({ visible: false, field: null, options: [], label: '' });
     const { sync, isSyncing, isOnline: online, pendingCount } = useSync();
     const fadeAnim = useState(new Animated.Value(0))[0];
 
@@ -51,6 +53,13 @@ export default function MemberFormScreen({ navigation }) {
         setShowDatePicker(true);
     };
 
+    const handleSelectOption = (option) => {
+        if (pickerModal.field) {
+            setFormData({ ...formData, [pickerModal.field]: option });
+        }
+        setPickerModal({ visible: false, field: null, options: [], label: '' });
+    };
+
     useFocusEffect(
         useCallback(() => {
             loadFormSchema();
@@ -65,16 +74,18 @@ export default function MemberFormScreen({ navigation }) {
         }).start();
     }, []);
 
-    const loadFormSchema = async () => {
+    const loadFormSchema = async (forceReload = false) => {
         try {
             // Try to fetch from server
             const connected = await isOnline();
-            if (connected) {
+            if (connected && (forceReload || !schemaVersion)) {
+                console.log('Fetching fresh schema from server...');
                 const serverSchema = await fetchFormSchema();
                 setSchema(serverSchema.elements);
                 setSchemaVersion(serverSchema.version);
                 await cacheFormSchema(serverSchema.version, serverSchema.elements);
-            } else {
+                if (forceReload) Alert.alert('Schema Updated', `Loaded Version ${serverSchema.version}`);
+            } else if (!forceReload) {
                 // Load from cache
                 const cached = await getCachedFormSchema();
                 if (cached) {
@@ -377,23 +388,33 @@ export default function MemberFormScreen({ navigation }) {
                                 {field.label} {field.required && <Text style={styles.required}>*</Text>}
                             </Text>
                         </View>
-                        <TouchableOpacity
-                            style={styles.pickerButton}
-                            onPress={() => {
-                                Alert.alert(`${field.label}`, 'Select an option', [
-                                    { text: 'Cancel', style: 'cancel' },
-                                    ...field.options.map(opt => ({
-                                        text: opt,
-                                        onPress: () => setFormData({ ...formData, [field.name]: opt })
-                                    }))
-                                ]);
-                            }}
-                        >
-                            <Text style={[styles.pickerText, !value && styles.placeholderText]}>
-                                {value || `Select ${field.label}`}
-                            </Text>
-                            <Ionicons name="chevron-down" size={20} color="#666" />
-                        </TouchableOpacity>
+                        <View style={styles.multiSelectContainer}>
+                            {(field.options || []).map((option) => {
+                                const isSelected = value === option;
+                                return (
+                                    <TouchableOpacity
+                                        key={option}
+                                        style={[
+                                            styles.multiSelectOption,
+                                            isSelected && styles.multiSelectOptionSelected,
+                                        ]}
+                                        onPress={() => setFormData({ ...formData, [field.name]: option })}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.multiSelectText,
+                                                isSelected && styles.multiSelectTextSelected,
+                                            ]}
+                                        >
+                                            {option}
+                                        </Text>
+                                        {isSelected && (
+                                            <Ionicons name="checkmark-circle" size={16} color="#fff" style={{ marginLeft: 4 }} />
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
                     </Animated.View>
                 );
 
@@ -474,6 +495,17 @@ export default function MemberFormScreen({ navigation }) {
                     </View>
                 </View>
                 <View style={styles.statusBar}>
+                    <TouchableOpacity
+                        style={[styles.statusItem, { backgroundColor: 'rgba(255,255,255,0.2)', padding: 4, borderRadius: 8 }]}
+                        onPress={() => {
+                            setLoading(true);
+                            loadFormSchema(true); // Force reload
+                        }}
+                    >
+                        <Ionicons name="refresh" size={16} color="#fff" />
+                        <Text style={styles.statusText}>v{schemaVersion || '?'} (Tap to Refresh)</Text>
+                    </TouchableOpacity>
+
                     <View style={styles.statusItem}>
                         <Ionicons
                             name={online ? 'cloud-done' : 'cloud-offline'}
@@ -482,18 +514,24 @@ export default function MemberFormScreen({ navigation }) {
                         />
                         <Text style={styles.statusText}>{online ? 'Online' : 'Offline'}</Text>
                     </View>
-                    {isSyncing ? (
-                        <View style={styles.syncingBadge}>
-                            <ActivityIndicator size="small" color="#fff" />
-                            <Text style={styles.syncingText}>Syncing...</Text>
-                        </View>
-                    ) : pendingCount > 0 ? (
-                        <View style={styles.pendingBadge}>
-                            <Ionicons name="time" size={14} color="#fff" />
-                            <Text style={styles.pendingText}>{pendingCount} pending</Text>
-                        </View>
-                    ) : null}
                 </View>
+                {/* Sync Status Sub-bar */}
+                {(isSyncing || pendingCount > 0) && (
+                    <View style={{ flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 10, gap: 10 }}>
+                        {isSyncing && (
+                            <View style={styles.syncingBadge}>
+                                <ActivityIndicator size="small" color="#fff" />
+                                <Text style={styles.syncingText}>Syncing...</Text>
+                            </View>
+                        )}
+                        {pendingCount > 0 && (
+                            <View style={styles.pendingBadge}>
+                                <Ionicons name="time" size={14} color="#fff" />
+                                <Text style={styles.pendingText}>{pendingCount} pending</Text>
+                            </View>
+                        )}
+                    </View>
+                )}
             </LinearGradient>
 
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -526,6 +564,50 @@ export default function MemberFormScreen({ navigation }) {
                     <Text style={styles.footerText}>Secure • Schema v{schemaVersion || 'Default'}</Text>
                 </View>
             </ScrollView>
+
+            {/* Picker Modal */}
+            <Modal
+                visible={pickerModal.visible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setPickerModal({ ...pickerModal, visible: false })}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setPickerModal({ ...pickerModal, visible: false })}
+                >
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>{pickerModal.label}</Text>
+                            <TouchableOpacity onPress={() => setPickerModal({ ...pickerModal, visible: false })}>
+                                <Ionicons name="close-circle" size={24} color="#666" />
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView style={{ maxHeight: 300 }}>
+                            {(pickerModal.options || []).map((option, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.modalOption}
+                                    onPress={() => handleSelectOption(option)}
+                                >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+                                        <Text style={[
+                                            styles.modalOptionText,
+                                            formData[pickerModal.field] === option && styles.modalOptionTextSelected
+                                        ]}>
+                                            {option}
+                                        </Text>
+                                        {formData[pickerModal.field] === option && (
+                                            <Ionicons name="checkmark-circle" size={20} color="#3b82f6" />
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
 
             {showDatePicker && (
                 <DateTimePicker
@@ -878,5 +960,52 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 200,
         resizeMode: 'cover',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 20,
+        maxHeight: '80%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+        paddingBottom: 10,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1e3a8a',
+    },
+    modalOption: {
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    modalOptionText: {
+        fontSize: 16,
+        color: '#333',
+    },
+    modalOptionTextSelected: {
+        color: '#3b82f6',
+        fontWeight: 'bold',
     },
 });
